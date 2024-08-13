@@ -47,9 +47,6 @@ public class NoteManager : MonoBehaviour
     public static NoteData CurrentNote { get; private set; }
 
     [SerializeField]
-    private DataManager dataManager;
-
-    [SerializeField]
     private GameObject newNoteInformationBackgroundImage;
     [SerializeField]
     private TMP_InputField dateInputField;
@@ -69,10 +66,13 @@ public class NoteManager : MonoBehaviour
         public Date date;
         public Date creationDate;
 
-        public NoteData(Date date, Date creationDate)
+        public List<Work.Data> workDatas;
+
+        public NoteData(Date date, Date creationDate, List<Work.Data> workDatas)
         {
             this.date = date;
             this.creationDate = creationDate;
+            this.workDatas = workDatas;
         }
     }
 
@@ -82,6 +82,8 @@ public class NoteManager : MonoBehaviour
     public static Action<string> DeleteNote { get; private set; }
 
     private void Awake() => Initialize();
+
+    private void Start() => DataManager.Instance.LoadData();
 
     private void Initialize()
     {
@@ -128,6 +130,8 @@ public class NoteManager : MonoBehaviour
             return;
         }
 
+        dateInputField.text = string.Empty;
+
         DateTime nowDateTime = DateTime.Now;
 
         string now = $"{nowDateTime.Year}.{nowDateTime.Month}.{nowDateTime.Day}";
@@ -137,10 +141,12 @@ public class NoteManager : MonoBehaviour
             return;
         }
 
-        NoteData note = new NoteData(date, creationDate);
+        NoteData note = new NoteData(date, creationDate, null);
 
         notes.Add(note);
-        dataManager.SaveData();
+
+        DataManager.Instance.SaveData();
+
         newNoteInformationBackgroundImage.SetActive(false);
 
         SetupNoteUI(note, () => LoadNoteScene(note));
@@ -209,7 +215,8 @@ public class NoteManager : MonoBehaviour
             if (notes[i].date == target)
             {
                 notes.RemoveAt(i);
-                dataManager.SaveData();
+
+                DataManager.Instance.SaveData();
 
                 return;
             }
