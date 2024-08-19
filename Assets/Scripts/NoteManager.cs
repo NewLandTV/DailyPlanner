@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -21,6 +22,25 @@ public struct Date : IEquatable<Date>
         this.month = month;
         this.day = day;
         this.dayOfWeek = dayOfWeek;
+    }
+
+    public static bool TryParse(string dateString, out Date result)
+    {
+        result = new Date();
+
+        bool success = DateTime.TryParse(dateString, out DateTime dateTime);
+
+        if (!success)
+        {
+            return false;
+        }
+
+        result.year = dateTime.Year;
+        result.month = dateTime.Month;
+        result.day = dateTime.Day;
+        result.dayOfWeek = (int)dateTime.DayOfWeek;
+
+        return true;
     }
 
     public override bool Equals(object obj) => obj is Date date && Equals(date);
@@ -76,14 +96,13 @@ public class NoteManager : MonoBehaviour
         }
     }
 
-    private List<NoteData> notes = new List<NoteData>();
-    public List<NoteData> Notes => notes;
+    private List<string> notePathList = new List<string>();
 
-    public static Action<string> DeleteNote { get; private set; }
+    public static Func<string, bool> DeleteNote { get; private set; }
 
     private void Awake() => Initialize();
 
-    private void Start() => DataManager.Instance.LoadData();
+    private void Start() => DataManager.Instance.LoadNotePathList();
 
     private void Initialize()
     {
@@ -97,35 +116,16 @@ public class NoteManager : MonoBehaviour
         DeleteNote = DeleteNoteWithDate;
     }
 
-    private bool ParseDate(string dateString, out Date result)
+    private void LoadNoteScene(string notePath)
     {
-        result = new Date();
-
-        bool success = DateTime.TryParse(dateString, out DateTime dateTime);
-
-        if (!success)
-        {
-            return false;
-        }
-
-        result.year = dateTime.Year;
-        result.month = dateTime.Month;
-        result.day = dateTime.Day;
-        result.dayOfWeek = (int)dateTime.DayOfWeek;
-
-        return true;
-    }
-
-    private void LoadNoteScene(NoteData note)
-    {
-        CurrentNote = note;
+        DataManager.Instance.LoadNoteData(notePath);
 
         SceneManager.LoadScene(2);
     }
 
     public void CreateNew()
     {
-        if (!ParseDate(dateInputField.text, out Date date))
+        if (!Date.TryParse(dateInputField.text, out Date date))
         {
             return;
         }
@@ -136,20 +136,23 @@ public class NoteManager : MonoBehaviour
 
         string now = $"{nowDateTime.Year}.{nowDateTime.Month}.{nowDateTime.Day}";
 
-        if (!ParseDate(now, out Date creationDate))
+        if (!Date.TryParse(now, out Date creationDate))
         {
             return;
         }
 
         NoteData note = new NoteData(date, creationDate, null);
 
-        notes.Add(note);
+        string dateString = date.String;
+        string notePath = DataManager.Instance.GetPath(dateString);
 
-        DataManager.Instance.SaveData();
+        notePathList.Add(notePath);
+
+        DataManager.Instance.SaveNotePathList(notePathList);
 
         newNoteInformationBackgroundImage.SetActive(false);
 
-        SetupNoteUI(note, () => LoadNoteScene(note));
+        SetupNoteUI(dateString, () => LoadNoteScene(notePath));
     }
 
     private GameObject MakeNoteUI()
@@ -176,7 +179,7 @@ public class NoteManager : MonoBehaviour
         return MakeNoteUI();
     }
 
-    private void SetupNoteUI(NoteData note, Action onClick)
+    private void SetupNoteUI(string dateString, Action onClick)
     {
         GameObject noteUI = GetNoteUI();
 
@@ -184,42 +187,49 @@ public class NoteManager : MonoBehaviour
 
         TextMeshProUGUI dateText = noteUI.GetComponentInChildren<TextMeshProUGUI>();
 
-        dateText.text = note.date.String;
+        dateText.text = dateString;
 
         Button button = noteUI.GetComponent<Button>();
 
         button.onClick.AddListener(() => onClick?.Invoke());
     }
 
-    public void LoadNoteDatas(List<NoteData> noteDatas)
+    public void LoadNoteList(List<string> notePathList)
     {
-        notes.AddRange(noteDatas);
+        this.notePathList = notePathList;
 
-        for (int i = noteDatas.Count - 1; i >= 0; i--)
+        for (int i = notePathList.Count - 1; i >= 0; i--)
         {
             int index = i;
+            string dateString = Path.GetFileName(notePathList[i]);
 
-            SetupNoteUI(noteDatas[i], () => LoadNoteScene(noteDatas[index]));
+            SetupNoteUI(dateString, () => LoadNoteScene(notePathList[index]));
         }
     }
 
-    public void DeleteNoteWithDate(string date)
+    public bool DeleteNoteWithDate(string date)
     {
-        if (!ParseDate(date, out Date target))
+        if (!Date.TryParse(date, out Date target))
         {
-            return;
+            return false;
         }
 
-        for (int i = notes.Count - 1; i >= 0; i--)
+        for (int i = notePathList.Count - 1; i >= 0; i--)
         {
-            if (notes[i].date == target)
+            string path = Path.GetFileName(notePathList[i]);
+
+            if (!path.Equals(target.String))
             {
-                notes.RemoveAt(i);
-
-                DataManager.Instance.SaveData();
-
-                return;
+                continue;
             }
+
+            notePathList.RemoveAt(i);
+
+            DataManager.Instance.SaveNotePathList(notePathList);
+
+            return true;
         }
+
+        return false;
     }
 }

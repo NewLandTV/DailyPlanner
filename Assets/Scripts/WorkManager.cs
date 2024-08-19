@@ -89,7 +89,7 @@ public class WorkManager : MonoBehaviour
 
         titleInputField.text = string.Empty;
 
-        DataManager.Instance.SaveData();
+        // TODO ... DataManager.Instance.SaveData();
 
         addWorkSetupBackgroundImage.SetActive(false);
     }

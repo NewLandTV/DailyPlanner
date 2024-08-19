@@ -10,7 +10,7 @@ public class DataManager : MonoBehaviour
     [Serializable]
     public class Data
     {
-        public List<NoteManager.NoteData> noteDatas;
+        public List<string> notePathList;
     }
 
     private Data data = new Data();
@@ -33,7 +33,7 @@ public class DataManager : MonoBehaviour
 
         DontDestroyOnLoad(gameObject);
 
-        dataPath = Path.Join(Application.persistentDataPath, "Notes.json");
+        dataPath = Application.persistentDataPath;
     }
     
     private void CheckComponents()
@@ -42,63 +42,76 @@ public class DataManager : MonoBehaviour
         workManager = FindObjectOfType<WorkManager>();
     }
 
-    public void SaveData()
+    public string GetPath(string fileName) => Path.Join(dataPath, fileName);
+
+    public void SaveNewNote(string fileName)
     {
-        CheckComponents();
+        string path = GetPath(fileName);
 
-        List<NoteManager.NoteData> noteDatas = noteManager?.Notes;
+        data.notePathList.Add(path);
 
-        if (noteDatas != null)
-        {
-            data.noteDatas = noteDatas;
-        }
+        path = GetPath("Notes.json");
 
-        List<Work> workList = workManager?.WorkList;
-
-        if (workList != null)
-        {
-            NoteManager.NoteData currentNoteData = NoteManager.CurrentNote;
-            NoteManager.NoteData note = data.noteDatas?.Find(x => x.date == currentNoteData.date);
-
-            if (note != null)
-            {
-                note.workDatas = workManager?.WorkDatas;
-            }
-        }
-
-        WriteToJsonFile();
+        WriteToJsonFile(path);
     }
 
-    private void WriteToJsonFile()
+    public void SaveNotePathList(List<string> notePathList)
     {
-        string jsonData = JsonUtility.ToJson(data, true);
+        data.notePathList = notePathList;
 
-        File.WriteAllText(dataPath, jsonData);
+        string path = GetPath("Notes.json");
+
+        WriteToJsonFile(path);
     }
 
-    public void LoadData()
+    public void SaveNoteData(NoteManager.NoteData data, string path)
     {
-        if (!File.Exists(dataPath))
-        {
-            return;
-        }
+        // TODO ...
+    }
 
-        ReadFromJsonFile();
+    private void WriteToJsonFile(string path)
+    {
+        string json = JsonUtility.ToJson(data, true);
 
-        if (data.noteDatas == null)
+        File.WriteAllText(path, json);
+    }
+
+    public void LoadNotePathList()
+    {
+        string path = GetPath("Notes.json");
+        bool canLoad = ReadFromJsonFile(path) && data.notePathList != null;
+
+        if (!canLoad)
         {
             return;
         }
 
         CheckComponents();
 
-        noteManager?.LoadNoteDatas(data.noteDatas);
+        noteManager?.LoadNoteList(data.notePathList);
     }
 
-    private void ReadFromJsonFile()
+    public void LoadNoteData(string notePath)
     {
-        string jsonData = File.ReadAllText(dataPath);
+        if (!ReadFromJsonFile(notePath))
+        {
+            return;
+        }
 
-        data = JsonUtility.FromJson<Data>(jsonData);
+        // TODO ...
+    }
+
+    private bool ReadFromJsonFile(string path)
+    {
+        if (!File.Exists(path))
+        {
+            return false;
+        }
+
+        string json = File.ReadAllText(path);
+
+        data = JsonUtility.FromJson<Data>(json);
+
+        return true;
     }
 }
