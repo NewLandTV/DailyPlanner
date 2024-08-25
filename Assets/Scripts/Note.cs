@@ -22,6 +22,14 @@ public class Note : MonoBehaviour
     {
         NoteManager.NoteData currentNoteData = NoteManager.CurrentNote;
 
+        if (currentNoteData == null)
+        {
+#if UNITY_EDITOR
+            Debug.Log("Invalid note data!");
+#endif
+            return;
+        }
+
         Date date = currentNoteData.date;
 
         titleText.text = date.String;
