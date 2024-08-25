@@ -86,13 +86,10 @@ public class NoteManager : MonoBehaviour
         public Date date;
         public Date creationDate;
 
-        public List<Work.Data> workDatas;
-
-        public NoteData(Date date, Date creationDate, List<Work.Data> workDatas)
+        public NoteData(Date date, Date creationDate)
         {
             this.date = date;
             this.creationDate = creationDate;
-            this.workDatas = workDatas;
         }
     }
 
@@ -102,7 +99,7 @@ public class NoteManager : MonoBehaviour
 
     private void Awake() => Initialize();
 
-    private void Start() => DataManager.Instance.LoadNotePathList();
+    private void Start() => Load();
 
     private void Initialize()
     {
@@ -116,9 +113,20 @@ public class NoteManager : MonoBehaviour
         DeleteNote = DeleteNoteWithDate;
     }
 
-    private void LoadNoteScene(string notePath)
+    private void Load() => DataManager.Instance.LoadNotePathList();
+
+    private void LoadNoteScene(string notePath, NoteData data)
     {
-        DataManager.Instance.LoadNoteData(notePath);
+        bool success = DataManager.Instance.LoadNoteData(notePath, out NoteData loadData);
+
+        CurrentNote = loadData;
+
+        if (!success)
+        {
+            DataManager.Instance.SaveNoteData(data, notePath);
+
+            CurrentNote = data;
+        }
 
         SceneManager.LoadScene(2);
     }
@@ -141,7 +149,7 @@ public class NoteManager : MonoBehaviour
             return;
         }
 
-        NoteData note = new NoteData(date, creationDate, null);
+        NoteData note = new NoteData(date, creationDate);
 
         string dateString = date.String;
         string notePath = DataManager.Instance.GetPath(dateString);
@@ -152,7 +160,7 @@ public class NoteManager : MonoBehaviour
 
         newNoteInformationBackgroundImage.SetActive(false);
 
-        SetupNoteUI(dateString, () => LoadNoteScene(notePath));
+        SetupNoteUI(dateString, () => LoadNoteScene(notePath, note));
     }
 
     private GameObject MakeNoteUI()
@@ -203,7 +211,7 @@ public class NoteManager : MonoBehaviour
             int index = i;
             string dateString = Path.GetFileName(notePathList[i]);
 
-            SetupNoteUI(dateString, () => LoadNoteScene(notePathList[index]));
+            SetupNoteUI(dateString, () => LoadNoteScene(notePathList[index], null));
         }
     }
 
@@ -222,6 +230,8 @@ public class NoteManager : MonoBehaviour
             {
                 continue;
             }
+
+            DataManager.Instance.DeleteFile(notePathList[i]);
 
             notePathList.RemoveAt(i);
 

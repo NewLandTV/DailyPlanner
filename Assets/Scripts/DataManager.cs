@@ -16,7 +16,6 @@ public class DataManager : MonoBehaviour
     private Data data = new Data();
 
     private NoteManager noteManager;
-    private WorkManager workManager;
 
     private string dataPath;
 
@@ -36,13 +35,9 @@ public class DataManager : MonoBehaviour
         dataPath = Application.persistentDataPath;
     }
     
-    private void CheckComponents()
-    {
-        noteManager = FindObjectOfType<NoteManager>();
-        workManager = FindObjectOfType<WorkManager>();
-    }
+    private void CheckComponents() => noteManager = FindObjectOfType<NoteManager>();
 
-    public string GetPath(string fileName) => Path.Join(dataPath, fileName);
+    public string GetPath(string fileName) => Path.Combine(dataPath, fileName);
 
     public void SaveNewNote(string fileName)
     {
@@ -52,7 +47,7 @@ public class DataManager : MonoBehaviour
 
         path = GetPath("Notes.json");
 
-        WriteToJsonFile(path);
+        WriteToJsonFile(path, data);
     }
 
     public void SaveNotePathList(List<string> notePathList)
@@ -61,15 +56,12 @@ public class DataManager : MonoBehaviour
 
         string path = GetPath("Notes.json");
 
-        WriteToJsonFile(path);
+        WriteToJsonFile(path, data);
     }
 
-    public void SaveNoteData(NoteManager.NoteData data, string path)
-    {
-        // TODO ...
-    }
+    public void SaveNoteData(NoteManager.NoteData data, string path) => WriteToJsonFile(path, data);
 
-    private void WriteToJsonFile(string path)
+    private void WriteToJsonFile(string path, object data)
     {
         string json = JsonUtility.ToJson(data, true);
 
@@ -79,7 +71,7 @@ public class DataManager : MonoBehaviour
     public void LoadNotePathList()
     {
         string path = GetPath("Notes.json");
-        bool canLoad = ReadFromJsonFile(path) && data.notePathList != null;
+        bool canLoad = ReadFromJsonFile(path, out data) && data.notePathList != null;
 
         if (!canLoad)
         {
@@ -91,18 +83,22 @@ public class DataManager : MonoBehaviour
         noteManager?.LoadNoteList(data.notePathList);
     }
 
-    public void LoadNoteData(string notePath)
+    public bool LoadNoteData(string notePath, out NoteManager.NoteData data)
     {
-        if (!ReadFromJsonFile(notePath))
+        bool canLoad = ReadFromJsonFile(notePath, out data);
+
+        if (!canLoad)
         {
-            return;
+            return false;
         }
 
-        // TODO ...
+        return true;
     }
 
-    private bool ReadFromJsonFile(string path)
+    private bool ReadFromJsonFile<T>(string path, out T result) where T : class
     {
+        result = null;
+
         if (!File.Exists(path))
         {
             return false;
@@ -110,7 +106,21 @@ public class DataManager : MonoBehaviour
 
         string json = File.ReadAllText(path);
 
-        data = JsonUtility.FromJson<Data>(json);
+        result = JsonUtility.FromJson<T>(json);
+
+        return true;
+    }
+
+    public bool DeleteFile(string path)
+    {
+        bool exist = File.Exists(path);
+
+        if (!exist)
+        {
+            return false;
+        }
+
+        File.Delete(path);
 
         return true;
     }
