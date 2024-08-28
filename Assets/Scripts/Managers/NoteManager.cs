@@ -156,11 +156,13 @@ public class NoteManager : MonoBehaviour
 
         notePathList.Add(notePath);
 
+        DataManager.Instance.SaveNoteData(note, notePath);
         DataManager.Instance.SaveNotePathList(notePathList);
 
         newNoteInformationBackgroundImage.SetActive(false);
 
         SetupNoteUI(dateString, () => LoadNoteScene(notePath, note));
+
     }
 
     private GameObject MakeNoteUI()
