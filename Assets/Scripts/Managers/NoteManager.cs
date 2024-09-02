@@ -86,10 +86,13 @@ public class NoteManager : MonoBehaviour
         public Date date;
         public Date creationDate;
 
-        public NoteData(Date date, Date creationDate)
+        public List<LineData> lineDatas;
+
+        public NoteData(Date date, Date creationDate, List<LineData> lineDatas)
         {
             this.date = date;
             this.creationDate = creationDate;
+            this.lineDatas = lineDatas;
         }
     }
 
@@ -149,7 +152,7 @@ public class NoteManager : MonoBehaviour
             return;
         }
 
-        NoteData note = new NoteData(date, creationDate);
+        NoteData note = new NoteData(date, creationDate, null);
 
         string dateString = date.String;
         string notePath = DataManager.Instance.GetPath(dateString);
