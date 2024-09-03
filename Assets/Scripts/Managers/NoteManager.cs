@@ -72,6 +72,9 @@ public class NoteManager : MonoBehaviour
     private TMP_InputField dateInputField;
 
     [SerializeField]
+    private GameObject deleteNoteBackgroundImage;
+
+    [SerializeField]
     private GameObject notePrefab;
     [SerializeField]
     private Transform noteParent;
@@ -98,7 +101,11 @@ public class NoteManager : MonoBehaviour
 
     private List<string> notePathList = new List<string>();
 
-    public static Func<string, bool> DeleteNote { get; private set; }
+    public static Action<string, Action> DeleteNote { get; private set; }
+
+    private string deleteNoteDateString;
+
+    private Action deleteNoteCallback;
 
     private void Awake() => Initialize();
 
@@ -113,7 +120,7 @@ public class NoteManager : MonoBehaviour
             MakeNoteUI();
         }
 
-        DeleteNote = DeleteNoteWithDate;
+        DeleteNote = OnDeleteNoteButtonClick;
     }
 
     private void Load() => DataManager.Instance.LoadNotePathList();
@@ -168,6 +175,14 @@ public class NoteManager : MonoBehaviour
 
     }
 
+    public void OnDeleteNoteButtonClick(string date, Action callback)
+    {
+        deleteNoteDateString = date;
+        deleteNoteCallback = callback;
+
+        deleteNoteBackgroundImage.SetActive(true);
+    }
+
     private GameObject MakeNoteUI()
     {
         GameObject instance = Instantiate(notePrefab, noteParent);
@@ -220,9 +235,17 @@ public class NoteManager : MonoBehaviour
         }
     }
 
-    public bool DeleteNoteWithDate(string date)
+    public void DeleteNoteButtonClick()
     {
-        if (!Date.TryParse(date, out Date target))
+        DeleteNoteWithNoteDateString(deleteNoteDateString);
+
+        deleteNoteBackgroundImage.SetActive(false);
+        deleteNoteCallback?.Invoke();
+    }
+
+    private bool DeleteNoteWithNoteDateString(string date)
+    {
+        if (!Date.TryParse(deleteNoteDateString, out Date target))
         {
             return false;
         }
