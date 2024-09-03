@@ -73,6 +73,8 @@ public class NoteManager : MonoBehaviour
 
     [SerializeField]
     private GameObject deleteNoteBackgroundImage;
+    [SerializeField]
+    private TextMeshProUGUI deleteNoteDateText;
 
     [SerializeField]
     private GameObject notePrefab;
@@ -102,8 +104,6 @@ public class NoteManager : MonoBehaviour
     private List<string> notePathList = new List<string>();
 
     public static Action<string, Action> DeleteNote { get; private set; }
-
-    private string deleteNoteDateString;
 
     private Action deleteNoteCallback;
 
@@ -177,7 +177,7 @@ public class NoteManager : MonoBehaviour
 
     public void OnDeleteNoteButtonClick(string date, Action callback)
     {
-        deleteNoteDateString = date;
+        deleteNoteDateText.text = date;
         deleteNoteCallback = callback;
 
         deleteNoteBackgroundImage.SetActive(true);
@@ -237,7 +237,7 @@ public class NoteManager : MonoBehaviour
 
     public void DeleteNoteButtonClick()
     {
-        DeleteNoteWithNoteDateString(deleteNoteDateString);
+        DeleteNoteWithNoteDateString(deleteNoteDateText.text);
 
         deleteNoteBackgroundImage.SetActive(false);
         deleteNoteCallback?.Invoke();
@@ -245,7 +245,7 @@ public class NoteManager : MonoBehaviour
 
     private bool DeleteNoteWithNoteDateString(string date)
     {
-        if (!Date.TryParse(deleteNoteDateString, out Date target))
+        if (!Date.TryParse(date, out Date target))
         {
             return false;
         }
