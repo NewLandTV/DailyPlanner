@@ -73,4 +73,10 @@ public class Line : MonoBehaviour
 
         lineRenderer.SetPositions(positionList.ToArray());
     }
+
+    public void ClearPositions()
+    {
+        loaded = false;
+        lineRenderer.positionCount = 0;
+    }
 }

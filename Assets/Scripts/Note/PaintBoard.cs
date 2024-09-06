@@ -39,6 +39,7 @@ public class PaintBoard : MonoBehaviour
     private void Update()
     {
         TryDraw();
+        TryUndo();
     }
 
     private void Initialize()
@@ -88,6 +89,26 @@ public class PaintBoard : MonoBehaviour
         return MakeLine();
     }
 
+    private bool DisableRecentLine()
+    {
+        for (int i = linePooling.Count - 1; i >= 0; i--)
+        {
+            if (!linePooling[i].gameObject.activeSelf)
+            {
+                continue;
+            }
+
+            linePooling[i].gameObject.SetActive(false);
+
+            linePooling[i].ClearPositions();
+            lineDatas.RemoveAt(i);
+
+            return true;
+        }
+
+        return false;
+    }
+
     private void TryDraw()
     {
         bool canDraw = Input.GetMouseButtonDown(0) && PointerOn;
@@ -113,6 +134,19 @@ public class PaintBoard : MonoBehaviour
         line.gameObject.SetActive(true);
     }
 
+    private void TryUndo()
+    {
+        bool canUndo = Input.GetKey(KeyCode.LeftControl) && Input.GetKeyDown(KeyCode.Z);
+        
+        if (!canUndo)
+        {
+            return;
+        }
+
+        DisableRecentLine();
+        SaveNote();
+    }
+
     private void LoadLine(Vector2[] positions)
     {
         Line line = GetLine();
@@ -136,6 +170,18 @@ public class PaintBoard : MonoBehaviour
         }
     }
 
+    private void SaveNote()
+    {
+        NoteManager.NoteData noteData = NoteManager.CurrentNote;
+
+        noteData.lineDatas = lineDatas;
+
+        string dateString = noteData.date.String;
+        string notePath = DataManager.Instance.GetPath(dateString);
+
+        DataManager.Instance.SaveNoteData(noteData, notePath);
+    }
+
     private void OnLineDrawEnd(List<Vector2> positions)
     {
         positions.Insert(0, lineStartPosition);
@@ -144,14 +190,7 @@ public class PaintBoard : MonoBehaviour
 
         lineDatas.Add(lineData);
 
-        NoteManager.NoteData noteData = NoteManager.CurrentNote;
-
-        noteData.lineDatas =lineDatas;
-
-        string dateString = noteData.date.String;
-        string notePath = DataManager.Instance.GetPath(dateString);
-
-        DataManager.Instance.SaveNoteData(noteData, notePath);
+        SaveNote();
     }
 
     public void OnPointerEnter(BaseEventData eventData) => PointerOn = true;
