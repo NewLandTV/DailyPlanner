@@ -25,6 +25,7 @@ public class PaintBoard : MonoBehaviour
 
     private List<Line> linePooling;
     private List<LineData> lineDatas = new List<LineData>();
+    private LineData recentLineData;
 
     private Vector3 lineStartPosition;
 
@@ -40,6 +41,7 @@ public class PaintBoard : MonoBehaviour
     {
         TryDraw();
         TryUndo();
+        TryRedo();
     }
 
     private void Initialize()
@@ -98,6 +100,11 @@ public class PaintBoard : MonoBehaviour
                 continue;
             }
 
+            if (i < lineDatas.Count)
+            {
+                recentLineData = lineDatas[i];
+            }
+
             linePooling[i].gameObject.SetActive(false);
 
             linePooling[i].ClearPositions();
@@ -147,8 +154,32 @@ public class PaintBoard : MonoBehaviour
         SaveNote();
     }
 
+    private void TryRedo()
+    {
+        bool canRedo = recentLineData != null && Input.GetKey(KeyCode.LeftControl) && Input.GetKeyDown(KeyCode.Y);
+
+        if (!canRedo)
+        {
+            return;
+        }
+
+        lineDatas.Add(recentLineData);
+
+        LoadLine(recentLineData.positions);
+        SaveNote();
+
+        recentLineData = null;
+    }
+
     private void LoadLine(Vector2[] positions)
     {
+        bool canLoad = positions != null || positions.Length >= 1;
+
+        if (!canLoad)
+        {
+            return;
+        }
+
         Line line = GetLine();
 
         line.transform.position = positions[0];
@@ -180,6 +211,20 @@ public class PaintBoard : MonoBehaviour
         string notePath = DataManager.Instance.GetPath(dateString);
 
         DataManager.Instance.SaveNoteData(noteData, notePath);
+    }
+
+    public void ClearBoard()
+    {
+        for (int i = linePooling.Count - 1; i >= 0; i--)
+        {
+            linePooling[i].gameObject.SetActive(false);
+
+            linePooling[i].ClearPositions();
+        }
+
+        lineDatas.Clear();
+
+        SaveNote();
     }
 
     private void OnLineDrawEnd(List<Vector2> positions)
