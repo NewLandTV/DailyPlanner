@@ -1,7 +1,9 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.UI;
 
 [Serializable]
 public class LineData
@@ -30,6 +32,11 @@ public class PaintBoard : MonoBehaviour
     private Vector3 lineStartPosition;
 
     private Camera mainCamera;
+
+    [SerializeField]
+    private Image targetScreenshotAreaImage;
+    [SerializeField]
+    private GameObject saveToImageButton;
 
     public static Action<List<Vector2>> OnDrawEnd { get; private set; }
 
@@ -225,6 +232,55 @@ public class PaintBoard : MonoBehaviour
         lineDatas.Clear();
 
         SaveNote();
+    }
+
+    public void SaveToImage() => StartCoroutine(SaveToImageRoutine());
+
+    private IEnumerator SaveToImageRoutine()
+    {
+        saveToImageButton.SetActive(false);
+
+        yield return new WaitForEndOfFrame();
+
+        // Get calculated canvas' square corvers in the world space.
+        Vector3[] corners = new Vector3[4];
+
+        RectTransform rectTransform = targetScreenshotAreaImage.GetComponent<RectTransform>();
+
+        rectTransform.GetWorldCorners(corners);
+
+        for (int i = 0; i < corners.Length; i++)
+        {
+            corners[i] = mainCamera.WorldToScreenPoint(corners[i]);
+        }
+
+        // Calculate x, y, width, height for capture area, rect.
+        float x = corners[0].x;
+        float y = corners[0].y;
+        int width = (int)corners[3].x - (int)corners[0].x;
+        int height = (int)corners[1].y - (int)corners[0].y;
+
+        Rect rect = new Rect(x, y, width, height);
+
+        // Take a picture paint board
+        Texture2D image = new Texture2D(width, height, TextureFormat.RGB24, false);
+
+        image.ReadPixels(rect, 0, 0);
+        image.Apply();
+
+        saveToImageButton.SetActive(true);
+
+        // And save it to png image file.
+        byte[] data = image.EncodeToPNG();
+        string currentNoteDateString = NoteManager.CurrentNote.date.String;
+        string fileName = $"{currentNoteDateString}.png";
+
+        DataManager.Instance.SaveImage(data, fileName);
+
+        if (Application.isPlaying)
+        {
+            Destroy(image);
+        }
     }
 
     private void OnLineDrawEnd(List<Vector2> positions)

@@ -61,6 +61,13 @@ public class DataManager : MonoBehaviour
 
     public void SaveNoteData(NoteManager.NoteData data, string path) => WriteToJsonFile(path, data);
 
+    public void SaveImage(byte[] data, string fileName)
+    {
+        string path = GetPath(fileName);
+
+        File.WriteAllBytes(path, data);
+    }
+
     private void WriteToJsonFile(string path, object data)
     {
         string json = JsonUtility.ToJson(data, true);
