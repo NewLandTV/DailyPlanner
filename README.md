@@ -1,7 +1,7 @@
 # Daily Planner
 
 <div>
-    <a href="https://www.youtube.com/@NewLand2019-JkhTV" target="_blank">
+    <a href="https://www.youtube.com/@장경혁tv" target="_blank">
         <img alt="JkhTV YouTube" src="https://img.shields.io/badge/YouTube-ff0000.svg?&style=flat-square&logo=YouTube&logoColor=white"/>
     </a>
     <a href="https://cafe.naver.com/2019newland" target="_blank">
